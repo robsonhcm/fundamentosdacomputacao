@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conversão de Bases — Sistemas Digitais</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;background:#0b1220;color:#e8eefc;min-height:100vh}
+    .wrap{max-width:700px;margin:auto;padding:30px 20px}
+    h1{font-size:1.6rem;margin-bottom:6px;color:#fff}
+    .sub{color:#aaa;margin-bottom:30px;font-size:.95rem}
+    .card{background:#111b33;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:24px;margin-bottom:20px}
+    .label{font-size:.78rem;color:#6ae4ff;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+    .pergunta{font-size:1.3rem;font-weight:bold;margin-bottom:20px;color:#fff;font-family:monospace}
+    .opcoes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+    .btn{background:#0e1a30;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:14px;color:#e8eefc;font-size:1.1rem;font-family:monospace;cursor:pointer;transition:.2s;text-align:center}
+    .btn:hover{border-color:#6ae4ff;background:#162040}
+    .btn.certa{background:#0d3324;border-color:#2ecc71;color:#2ecc71}
+    .btn.errada{background:#2d0f0f;border-color:#e74c3c;color:#e74c3c}
+    .feedback{min-height:40px;font-size:.95rem;border-radius:8px;padding:10px 14px;margin-bottom:16px;display:none}
+    .feedback.ok{background:#0d3324;color:#2ecc71;border:1px solid #2ecc71;display:block}
+    .feedback.ko{background:#2d0f0f;color:#e74c3c;border:1px solid #e74c3c;display:block}
+    .placar{display:flex;gap:16px;margin-bottom:24px}
+    .stat{background:#111b33;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 18px;text-align:center;flex:1}
+    .stat-n{font-size:1.6rem;font-weight:bold}
+    .stat-l{font-size:.75rem;color:#aaa;margin-top:2px}
+    .acertos .stat-n{color:#2ecc71}
+    .erros .stat-n{color:#e74c3c}
+    .progresso{background:#1a2540;border-radius:6px;height:8px;margin-bottom:24px;overflow:hidden}
+    .barra{background:#6ae4ff;height:100%;border-radius:6px;transition:.4s}
+    .btn-prox{background:#6ae4ff;color:#0b1220;border:none;border-radius:10px;padding:12px 28px;font-size:1rem;font-weight:bold;cursor:pointer;margin-top:8px;display:none}
+    .btn-prox:hover{background:#8aedff}
+    .explicacao{background:#0b1830;border-left:3px solid #6ae4ff;padding:10px 14px;border-radius:0 8px 8px 0;font-size:.9rem;color:#b0c8e8;margin-top:10px;display:none;line-height:1.6}
+    .fim{text-align:center;padding:30px 0}
+    .fim h2{font-size:1.8rem;margin-bottom:10px}
+    .fim p{color:#aaa;margin-bottom:20px}
+    .btn-reiniciar{background:#6ae4ff;color:#0b1220;border:none;border-radius:10px;padding:13px 32px;font-size:1rem;font-weight:bold;cursor:pointer}
+    .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.78rem;margin-bottom:16px}
+    .badge-modulo{background:#1a2a4a;color:#6ae4ff;border:1px solid #6ae4ff}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge badge-modulo">Módulo 3</span>
+  <h1>Conversão de Bases</h1>
+  <p class="sub">Decimal → Binário, Octal e Hexadecimal. 10 desafios progressivos.</p>
+
+  <div class="placar">
+    <div class="stat acertos"><div class="stat-n" id="acertos">0</div><div class="stat-l">Acertos</div></div>
+    <div class="stat erros"><div class="stat-n" id="erros">0</div><div class="stat-l">Erros</div></div>
+    <div class="stat"><div class="stat-n" id="questao-n">1</div><div class="stat-l">de 10</div></div>
+  </div>
+  <div class="progresso"><div class="barra" id="barra" style="width:0%"></div></div>
+
+  <div class="card" id="card-jogo">
+    <div class="label" id="tipo-label">Binário</div>
+    <div class="pergunta" id="pergunta">—</div>
+    <div class="opcoes" id="opcoes"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="explicacao" id="explicacao"></div>
+    <button class="btn-prox" id="btn-prox" onclick="proxima()">Próxima →</button>
+  </div>
+
+  <div class="card fim" id="fim" style="display:none">
+    <h2 id="fim-titulo">🎉 Parabéns!</h2>
+    <p id="fim-msg"></p>
+    <button class="btn-reiniciar" onclick="reiniciar()">Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+const banco=[
+  {dec:10,base:2,gabarito:'1010',ops:['1010','1001','1100','1011'],tipo:'Decimal → Binário',exp:'10 = 8+2 = 2³+2¹ = 1010₂  (dividir por 2: restos 0,1,0,1 → ler de baixo para cima)'},
+  {dec:45,base:2,gabarito:'101101',ops:['101101','100101','110101','101001'],tipo:'Decimal → Binário',exp:'45 ÷ 2: restos 1,0,1,1,0,1 → lidos de baixo para cima = 101101₂'},
+  {dec:26,base:8,gabarito:'32',ops:['32','26','34','30'],tipo:'Decimal → Octal',exp:'26 ÷ 8 = 3 resto 2 → 32₈  (verificação: 3×8+2 = 26 ✓)'},
+  {dec:255,base:16,gabarito:'FF',ops:['FF','FE','EF','F0'],tipo:'Decimal → Hexadecimal',exp:'255 ÷ 16 = 15 resto 15 → FF₁₆  (15 = F em hex)'},
+  {dec:13,base:2,gabarito:'1101',ops:['1101','1011','1110','1001'],tipo:'Decimal → Binário',exp:'13 = 8+4+1 = 2³+2²+2⁰ = 1101₂'},
+  {dec:47,base:16,gabarito:'2F',ops:['2F','3E','2E','3F'],tipo:'Decimal → Hexadecimal',exp:'47 ÷ 16 = 2 resto 15 → 2F₁₆  (15 = F)'},
+  {dec:64,base:2,gabarito:'1000000',ops:['1000000','0111111','1100000','1000001'],tipo:'Decimal → Binário',exp:'64 = 2⁶ = 1000000₂'},
+  {dec:100,base:8,gabarito:'144',ops:['144','154','134','140'],tipo:'Decimal → Octal',exp:'100 ÷ 8 = 12 r4; 12 ÷ 8 = 1 r4; 1 ÷ 8 = 0 r1 → 144₈'},
+  {dec:200,base:16,gabarito:'C8',ops:['C8','B8','D8','C0'],tipo:'Decimal → Hexadecimal',exp:'200 ÷ 16 = 12 r8 → C8₁₆  (12 = C)'},
+  {dec:53,base:2,gabarito:'110101',ops:['110101','101101','110001','111001'],tipo:'Decimal → Binário',exp:'53 = 32+16+4+1 = 2⁵+2⁴+2²+2⁰ = 110101₂'},
+];
+
+let idx=0,acertos=0,erros=0,respondido=false;
+const perguntas=banco.sort(()=>Math.random()-.5).slice(0,10);
+
+function montar(){
+  const q=perguntas[idx];
+  respondido=false;
+  document.getElementById('tipo-label').textContent=q.tipo;
+  document.getElementById('pergunta').textContent=q.dec+'₁₀ = ?₁₆'.replace('₁₆',q.base===2?'₂':q.base===8?'₈':'₁₆');
+  document.getElementById('questao-n').textContent=idx+1;
+  document.getElementById('barra').style.width=(idx/10*100)+'%';
+  document.getElementById('feedback').className='feedback';
+  document.getElementById('explicacao').style.display='none';
+  document.getElementById('btn-prox').style.display='none';
+  const div=document.getElementById('opcoes');
+  div.innerHTML='';
+  q.ops.forEach(op=>{
+    const b=document.createElement('button');
+    b.className='btn';b.textContent=op;
+    b.onclick=()=>responder(op,b,q);
+    div.appendChild(b);
+  });
+}
+
+function responder(op,btn,q){
+  if(respondido)return;
+  respondido=true;
+  const ok=op===q.gabarito;
+  if(ok){acertos++;document.getElementById('acertos').textContent=acertos;btn.classList.add('certa')}
+  else{erros++;document.getElementById('erros').textContent=erros;btn.classList.add('errada');
+    document.querySelectorAll('.btn').forEach(b=>{if(b.textContent===q.gabarito)b.classList.add('certa')})}
+  const fb=document.getElementById('feedback');
+  fb.textContent=ok?'✔ Correto!':'✘ Errado!';
+  fb.className='feedback '+(ok?'ok':'ko');
+  const exp=document.getElementById('explicacao');
+  exp.textContent=q.exp;exp.style.display='block';
+  document.getElementById('btn-prox').style.display='inline-block';
+}
+
+function proxima(){
+  idx++;
+  if(idx>=10){fim();return;}
+  montar();
+}
+
+function fim(){
+  document.getElementById('card-jogo').style.display='none';
+  document.getElementById('fim').style.display='block';
+  document.getElementById('barra').style.width='100%';
+  const pct=Math.round(acertos/10*100);
+  document.getElementById('fim-titulo').textContent=pct>=80?'🏆 Excelente!':pct>=50?'👍 Bom trabalho!':'💡 Continue praticando!';
+  document.getElementById('fim-msg').textContent=`Você acertou ${acertos} de 10 questões (${pct}%).`;
+}
+
+function reiniciar(){
+  idx=0;acertos=0;erros=0;
+  document.getElementById('acertos').textContent=0;
+  document.getElementById('erros').textContent=0;
+  perguntas.sort(()=>Math.random()-.5);
+  document.getElementById('card-jogo').style.display='block';
+  document.getElementById('fim').style.display='none';
+  montar();
+}
+
+montar();
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Adição Binária — Sistemas Digitais</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;background:#0b1220;color:#e8eefc;min-height:100vh}
+    .wrap{max-width:680px;margin:auto;padding:30px 20px}
+    h1{font-size:1.6rem;margin-bottom:6px}
+    .sub{color:#aaa;margin-bottom:28px;font-size:.95rem}
+    .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.78rem;margin-bottom:14px;background:#1a2a4a;color:#6ae4ff;border:1px solid #6ae4ff}
+    .placar{display:flex;gap:16px;margin-bottom:20px}
+    .stat{background:#111b33;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 18px;text-align:center;flex:1}
+    .stat-n{font-size:1.5rem;font-weight:bold}
+    .stat-l{font-size:.75rem;color:#aaa;margin-top:2px}
+    .ac .stat-n{color:#2ecc71}.er .stat-n{color:#e74c3c}
+    .progresso{background:#1a2540;border-radius:6px;height:8px;margin-bottom:24px;overflow:hidden}
+    .barra{background:#6ae4ff;height:100%;border-radius:6px;transition:.4s}
+    .card{background:#111b33;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:24px;margin-bottom:20px}
+    .tipo{font-size:.78rem;color:#6ae4ff;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+    .operacao{font-family:monospace;font-size:1.5rem;background:#0b1830;border-radius:10px;padding:16px 22px;margin-bottom:20px;line-height:2;color:#fff}
+    .linha-a{color:#7dd3fc}
+    .linha-b{color:#fbbf24}
+    .linha-res{color:#34d399;border-top:1px solid #334}
+    .carry-row{font-size:.85rem;color:#a78bfa;font-family:monospace}
+    .opcoes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{background:#0e1a30;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:14px;color:#e8eefc;font-size:1.05rem;font-family:monospace;cursor:pointer;transition:.2s;text-align:center}
+    .btn:hover{border-color:#6ae4ff;background:#162040}
+    .btn.certa{background:#0d3324;border-color:#2ecc71;color:#2ecc71}
+    .btn.errada{background:#2d0f0f;border-color:#e74c3c;color:#e74c3c}
+    .feedback{min-height:38px;border-radius:8px;padding:10px 14px;margin-top:14px;display:none;font-size:.9rem}
+    .feedback.ok{background:#0d3324;color:#2ecc71;border:1px solid #2ecc71;display:block}
+    .feedback.ko{background:#2d0f0f;color:#e74c3c;border:1px solid #e74c3c;display:block}
+    .exp{background:#0b1830;border-left:3px solid #6ae4ff;padding:10px 14px;border-radius:0 8px 8px 0;font-size:.85rem;color:#b0c8e8;margin-top:10px;display:none;line-height:1.7;font-family:monospace;white-space:pre-line}
+    .btn-prox{background:#6ae4ff;color:#0b1220;border:none;border-radius:10px;padding:12px 28px;font-size:1rem;font-weight:bold;cursor:pointer;margin-top:12px;display:none}
+    .btn-prox:hover{background:#8aedff}
+    .fim{text-align:center;padding:30px 0}
+    .fim h2{font-size:1.8rem;margin-bottom:10px}
+    .fim p{color:#aaa;margin-bottom:22px}
+    .btn-rei{background:#6ae4ff;color:#0b1220;border:none;border-radius:10px;padding:13px 32px;font-size:1rem;font-weight:bold;cursor:pointer}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Módulo 4</span>
+  <h1>Adição Binária</h1>
+  <p class="sub">Soma coluna por coluna com transporte (carry). 10 desafios.</p>
+
+  <div class="placar">
+    <div class="stat ac"><div class="stat-n" id="ac">0</div><div class="stat-l">Acertos</div></div>
+    <div class="stat er"><div class="stat-n" id="er">0</div><div class="stat-l">Erros</div></div>
+    <div class="stat"><div class="stat-n" id="qn">1</div><div class="stat-l">de 10</div></div>
+  </div>
+  <div class="progresso"><div class="barra" id="barra" style="width:0%"></div></div>
+
+  <div class="card" id="jogo">
+    <div class="tipo">Qual é o resultado da soma binária?</div>
+    <div class="operacao">
+      <div class="carry-row" id="carry">carry:</div>
+      <div class="linha-a" id="la">—</div>
+      <div class="linha-b" id="lb">+ —</div>
+      <div class="linha-res">= ?</div>
+    </div>
+    <div class="opcoes" id="ops"></div>
+    <div class="feedback" id="fb"></div>
+    <div class="exp" id="exp"></div>
+    <button class="btn-prox" id="prox" onclick="proxima()">Próxima →</button>
+  </div>
+
+  <div class="card fim" id="fim" style="display:none">
+    <h2 id="ft">🏆 Excelente!</h2>
+    <p id="fm"></p>
+    <button class="btn-rei" onclick="reiniciar()">Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+function toBin(n,bits){return n.toString(2).padStart(bits,'0')}
+function addBin(a,b){
+  const r=a+b;const bits=Math.max(a.toString(2).length,b.toString(2).length)+1;
+  return {res:toBin(r,bits),a:toBin(a,bits),b:toBin(b,bits)}
+}
+
+const pares=[
+  [5,3],[9,6],[13,11],[7,5],[15,10],[6,9],[12,7],[3,14],[11,4],[8,8]
+];
+
+let idx=0,ac=0,er=0,resp=false;
+const qs=pares.sort(()=>Math.random()-.5).slice(0,10);
+
+function distratores(correto){
+  const n=parseInt(correto,2);
+  const d=new Set([correto]);
+  while(d.size<4){
+    const delta=[-2,-1,1,2][Math.floor(Math.random()*4)];
+    const v=n+delta;
+    if(v>0)d.add(v.toString(2).padStart(correto.length,'0'));
+  }
+  return [...d].sort(()=>Math.random()-.5);
+}
+
+function carryStr(a,b,bits){
+  let carry=0,s='';
+  for(let i=bits-1;i>=0;i--){
+    const da=parseInt(a[i]||'0'),db=parseInt(b[i]||'0');
+    const sum=da+db+carry;
+    carry=sum>=2?1:0;
+    s=carry+s;
+  }
+  return s;
+}
+
+function montar(){
+  resp=false;
+  const [a,b]=qs[idx];
+  const bits=Math.max(a.toString(2).length,b.toString(2).length)+1;
+  const pa=toBin(a,bits),pb=toBin(b,bits);
+  const res=toBin(a+b,bits+1).padStart(bits+1,'0');
+  document.getElementById('la').textContent=pa;
+  document.getElementById('lb').textContent='+ '+pb;
+  const c=carryStr(pa,pb,bits);
+  document.getElementById('carry').textContent='carry: '+c.padStart(bits+1,' ');
+  document.getElementById('qn').textContent=idx+1;
+  document.getElementById('barra').style.width=(idx/10*100)+'%';
+  document.getElementById('fb').className='feedback';
+  document.getElementById('exp').style.display='none';
+  document.getElementById('prox').style.display='none';
+  const div=document.getElementById('ops');div.innerHTML='';
+  distratores(res).forEach(op=>{
+    const btn=document.createElement('button');
+    btn.className='btn';btn.textContent=op;
+    btn.onclick=()=>responder(op,btn,res,a,b,pa,pb);
+    div.appendChild(btn);
+  });
+}
+
+function responder(op,btn,res,a,b,pa,pb){
+  if(resp)return;resp=true;
+  const ok=op===res;
+  if(ok){ac++;document.getElementById('ac').textContent=ac;btn.classList.add('certa')}
+  else{er++;document.getElementById('er').textContent=er;btn.classList.add('errada');
+    document.querySelectorAll('.btn').forEach(bt=>{if(bt.textContent===res)bt.classList.add('certa')})}
+  document.getElementById('fb').textContent=ok?'✔ Correto!':'✘ Incorreto!';
+  document.getElementById('fb').className='feedback '+(ok?'ok':'ko');
+  document.getElementById('exp').textContent=
+    `${pa}\n+ ${pb}\n${'─'.repeat(res.length)}\n${res}\n\n${a}₁₀ + ${b}₁₀ = ${a+b}₁₀ = ${res}₂`;
+  document.getElementById('exp').style.display='block';
+  document.getElementById('prox').style.display='inline-block';
+}
+
+function proxima(){idx++;if(idx>=10){fim();return;}montar();}
+function fim(){
+  document.getElementById('jogo').style.display='none';
+  document.getElementById('fim').style.display='block';
+  document.getElementById('barra').style.width='100%';
+  const pct=Math.round(ac/10*100);
+  document.getElementById('ft').textContent=pct>=80?'🏆 Excelente!':pct>=50?'👍 Bom trabalho!':'💡 Continue praticando!';
+  document.getElementById('fm').textContent=`Você acertou ${ac} de 10 questões (${pct}%).`;
+}
+function reiniciar(){
+  idx=0;ac=0;er=0;
+  document.getElementById('ac').textContent=0;
+  document.getElementById('er').textContent=0;
+  qs.sort(()=>Math.random()-.5);
+  document.getElementById('jogo').style.display='block';
+  document.getElementById('fim').style.display='none';
+  montar();
+}
+montar();
+</script>
+</body>
+</html>
